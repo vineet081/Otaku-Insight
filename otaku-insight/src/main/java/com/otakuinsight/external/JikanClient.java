@@ -87,6 +87,7 @@ public class JikanClient {
 
         return dto;
     }
+
     public List<EpisodeDTO> fetchAllEpisodes(Long animeId) {
 
         // This list will collect ALL episodes from ALL pages
@@ -171,6 +172,7 @@ public class JikanClient {
 
         return dto;
     }
+
     public AnimeDTO searchAnimeById(Long animeId) {
 
         String url = JIKAN_BASE_URL + "/anime/" + animeId;
@@ -186,4 +188,52 @@ public class JikanClient {
         return null;
     }
 
+    public Map<String, Object> fetchRelatedManga(Long animeId) {
+
+        String url = JIKAN_BASE_URL + "/anime/" + animeId + "/relations";
+        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+
+        if (response == null) return null;
+
+        List<Map<String, Object>> relations =
+                (List<Map<String, Object>>) response.get("data");
+
+        if (relations == null || relations.isEmpty()) return null;
+
+        // Loop through all relations
+        for (Map<String, Object> relation : relations) {
+            Object relationTypeObj = relation.get("relation");
+            if (relationTypeObj == null) continue;
+
+            String relationType = relationTypeObj.toString();
+
+            if (relationType.equalsIgnoreCase("Adaptation")) {
+                // Get the entry list
+                List<Map<String, Object>> entries =
+                        (List<Map<String, Object>>) relation.get("entry");
+
+                if (entries == null || entries.isEmpty()) continue;
+
+                // Find manga type entry
+                for (Map<String, Object> entry : entries) {
+                    Object typeObj = entry.get("type");
+                    if (typeObj != null &&
+                            typeObj.toString().equalsIgnoreCase("manga")) {
+                        return entry; // Return manga entry!
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public Map<String, Object> fetchMangaDetails(Long mangaId) {
+
+        String url = "https://api.jikan.moe/v4/manga/" + mangaId;
+        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+
+        if (response == null) return null;
+
+        return (Map<String, Object>) response.get("data");
+    }
 }
